@@ -15,6 +15,11 @@ body {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+h2 {
+    color: #1da1f2;
+    margin-bottom: 20px;
+}
+
 .status-panel {
     margin-bottom: 20px;
     padding: 15px;
@@ -52,11 +57,38 @@ body {
     padding: 5px 10px;
     border-radius: 4px;
     cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+    background-color: #5a6268;
+}
+
+.retry-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
 }
 
 .error-message {
     color: #dc3545;
     margin-top: 10px;
+    font-size: 0.9em;
+}
+
+.scraper-section {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.run-button {
+    background-color: #1da1f2;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s;
 }
 
 .run-button:disabled {
@@ -68,28 +100,46 @@ body {
     background-color: #1991db;
 }
 
-#results {
+.loading-spinner {
+    margin: 10px 0;
+    color: #666;
+    font-style: italic;
+}
+
+.results-section {
     margin-top: 20px;
-}
-
-pre {
-    background-color: #f8f9fa;
     padding: 15px;
+    background-color: #f8f9fa;
     border-radius: 4px;
-    overflow-x: auto;
 }
 
-ul {
-    list-style-type: none;
-    padding: 0;
+.trends-container {
+    margin-top: 10px;
 }
 
-li {
+.trends-container ol {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.trends-container li {
     padding: 8px 0;
     border-bottom: 1px solid #eee;
 }
 
-h3, h4 {
-    color: #333;
-    margin-top: 0;
+.trends-container li:last-child {
+    border-bottom: none;
+}
+
+.metadata {
+    margin-top: 15px;
+    font-size: 0.9em;
+    color: #666;
+    display: flex;
+    justify-content: space-between;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }

@@ -1,0 +1,39 @@
+2024-12-25 02:54:37,677 - INFO - Checking proxy connection...
+2024-12-25 02:54:38,538 - WARNING - Failed to connect through proxy us-ca.proxymesh.com:31280: HTTPSConnectionPool(host='api.ipify.org', port=443): Max retries exceeded with url: / (Caused by ProxyError('Unable to connect to proxy', OSError('Tunnel connection failed: 407 bad password')))
+2024-12-25 02:54:39,345 - WARNING - Failed to connect through proxy us-wa.proxymesh.com:31280: HTTPSConnectionPool(host='api.ipify.org', port=443): Max retries exceeded with url: / (Caused by ProxyError('Unable to connect to proxy', OSError('Tunnel connection failed: 407 bad password')))
+2024-12-25 02:54:40,161 - WARNING - Failed to connect through proxy us-fl.proxymesh.com:31280: HTTPSConnectionPool(host='api.ipify.org', port=443): Max retries exceeded with url: / (Caused by ProxyError('Unable to connect to proxy', OSError('Tunnel connection failed: 407 bad password')))
+2024-12-25 02:54:50,230 - WARNING - Failed to connect through proxy us-ny.proxymesh.com:31280: HTTPSConnectionPool(host='api.ipify.org', port=443): Max retries exceeded with url: / (Caused by ProxyError('Unable to connect to proxy', ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001A8FE79CBF0>, 'Connection to us-ny.proxymesh.com timed out. (connect timeout=10)')))
+2024-12-25 02:55:00,368 - WARNING - Failed to connect through proxy us-il.proxymesh.com:31280: HTTPSConnectionPool(host='api.ipify.org', port=443): Max retries exceeded with url: / (Caused by ProxyError('Unable to connect to proxy', ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001A8FE79D280>, 'Connection to us-il.proxymesh.com timed out. (connect timeout=10)')))
+2024-12-25 02:55:00,369 - ERROR - Failed to connect to any ProxyMesh servers
+2024-12-25 02:55:00,413 - WARNING -  * Debugger is active!
+2024-12-25 02:55:00,416 - INFO -  * Debugger PIN: 432-814-547
+2024-12-25 02:55:00,483 - INFO - 127.0.0.1 - - [25/Dec/2024 02:55:00] "[35m[1mGET /status HTTP/1.1[0m" 500 -
+2024-12-25 02:55:22,234 - INFO - Checking proxy connection...
+2024-12-25 02:55:24,287 - INFO - Successfully connected through proxy: us-ca.proxymesh.com:31280
+2024-12-25 02:55:24,288 - ERROR - Initialization failed: 'TwitterScraper' object has no attribute 'initialize_driver_and_login'
+2024-12-25 02:59:06,169 - INFO - Checking proxy connection...
+2024-12-25 02:59:07,925 - INFO - Successfully connected through proxy: us-ca.proxymesh.com:31280
+2024-12-25 02:59:07,925 - ERROR - Initialization failed: 'TwitterScraper' object has no attribute 'initialize_driver_and_login'
+2024-12-25 02:59:07,926 - ERROR - Attempt 1 failed to initialize scraper: 'TwitterScraper' object has no attribute 'initialize_driver_and_login'
+2024-12-25 02:59:13,958 - INFO - Checking proxy connection...
+2024-12-25 02:59:15,672 - INFO - Successfully connected through proxy: us-ca.proxymesh.com:31280
+2024-12-25 02:59:15,672 - ERROR - Initialization failed: 'TwitterScraper' object has no attribute 'initialize_driver_and_login'
+2024-12-25 02:59:15,673 - ERROR - Attempt 2 failed to initialize scraper: 'TwitterScraper' object has no attribute 'initialize_driver_and_login'
+2024-12-25 02:59:21,679 - INFO - Checking proxy connection...
+2024-12-25 02:59:24,164 - INFO - Successfully connected through proxy: us-ca.proxymesh.com:31280
+2024-12-25 02:59:24,165 - ERROR - Initialization failed: 'TwitterScraper' object has no attribute 'initialize_driver_and_login'
+2024-12-25 02:59:24,165 - ERROR - Attempt 3 failed to initialize scraper: 'TwitterScraper' object has no attribute 'initialize_driver_and_login'
+2024-12-25 03:01:39,720 - INFO - Checking proxy connection...
+2024-12-25 03:01:49,791 - WARNING - Failed to connect through proxy us-ca.proxymesh.com:31280: HTTPSConnectionPool(host='api.ipify.org', port=443): Max retries exceeded with url: / (Caused by ProxyError('Unable to connect to proxy', ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x0000026ACD4A04D0>, 'Connection to us-ca.proxymesh.com timed out. (connect timeout=10)')))
+2024-12-25 03:01:59,865 - WARNING - Failed to connect through proxy us-wa.proxymesh.com:31280: HTTPSConnectionPool(host='api.ipify.org', port=443): Max retries exceeded with url: / (Caused by ProxyError('Unable to connect to proxy', ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x0000026ACD4A08C0>, 'Connection to us-wa.proxymesh.com timed out. (connect timeout=10)')))
+2024-12-25 03:02:00,976 - WARNING - Failed to connect through proxy us-fl.proxymesh.com:31280: HTTPSConnectionPool(host='api.ipify.org', port=443): Max retries exceeded with url: / (Caused by ProxyError('Unable to connect to proxy', OSError('Tunnel connection failed: 402 access to us-fl proxy not authorized')))
+2024-12-25 03:02:01,784 - WARNING - Failed to connect through proxy us-ny.proxymesh.com:31280: HTTPSConnectionPool(host='api.ipify.org', port=443): Max retries exceeded with url: / (Caused by ProxyError('Unable to connect to proxy', OSError('Tunnel connection failed: 402 access to us-ny proxy not authorized')))
+2024-12-25 03:02:11,838 - WARNING - Failed to connect through proxy us-il.proxymesh.com:31280: HTTPSConnectionPool(host='api.ipify.org', port=443): Max retries exceeded with url: / (Caused by ProxyError('Unable to connect to proxy', ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x0000026ACD0D1A30>, 'Connection to us-il.proxymesh.com timed out. (connect timeout=10)')))
+2024-12-25 03:02:11,839 - ERROR - Failed to connect to any ProxyMesh servers
+2024-12-25 03:02:11,840 - WARNING - Connection lost, attempting to reconnect...
+2024-12-25 03:02:11,841 - ERROR - Error in keep_alive task: 'TwitterScraper' object has no attribute 'retry_connections'
+2024-12-25 03:02:11,862 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.31.44:5000
+2024-12-25 03:02:11,863 - INFO - [33mPress CTRL+C to quit[0m
