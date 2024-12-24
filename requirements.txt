@@ -1,0 +1,6 @@
+# requirements.txt
+selenium
+flask
+pymongo
+python-dotenv
+requests

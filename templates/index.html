@@ -1,0 +1,38 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Twitter Trends Scraper</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <button onclick="runScraper()" class="run-button">Click here to run the script</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function runScraper() {
+            document.getElementById('results').innerHTML = 'Loading...';
+            fetch('/run_scraper')
+                .then(response => response.json())
+                .then(data => {
+                    let html = `
+                        <h3>These are the most happening topics as on ${data.datetime}</h3>
+                        <ul>
+                            ${data.trends.map(trend => `<li>${trend}</li>`).join('')}
+                        </ul>
+                        <p>The IP address used for this query was ${data.ip_address}</p>
+                        <h4>Here's a JSON extract of this record from the MongoDB:</h4>
+                        <pre>${JSON.stringify(data.mongodb_record, null, 2)}</pre>
+                        <button onclick="runScraper()" class="run-button">Click here to run the query again</button>
+                    `;
+                    document.getElementById('results').innerHTML = html;
+                })
+                .catch(error => {
+                    document.getElementById('results').innerHTML = 'Error: ' + error;
+                });
+        }
+    </script>
+</body>
+</html>
