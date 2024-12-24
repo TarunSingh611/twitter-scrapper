@@ -16,21 +16,22 @@ scraper = TwitterScraper()
 def home():
     return render_template('index.html')
 
-@app.route('/run_scraper')
-def run_scraper():
-    result = scraper.get_trending_topics()
-    return jsonify({
-        'trends': [
-            result['nameoftrend1'],
-            result['nameoftrend2'],
-            result['nameoftrend3'],
-            result['nameoftrend4'],
-            result['nameoftrend5']
-        ],
-        'datetime': result['datetime'].strftime('%Y-%m-%d %H:%M:%S'),
-        'ip_address': result['ip_address'],
-        'mongodb_record': json.loads(json_util.dumps(result))
-    })
+    @app.route('/status')
+    def check_status():
+        return jsonify(scraper.get_connection_status())
+
+    @app.route('/retry_twitter')
+    def retry_twitter():
+        if scraper.driver:
+            scraper.driver.quit()
+            scraper.driver = None
+        scraper.initialize_driver_and_login()
+        return jsonify({"twitter_connected": scraper.twitter_connected})
+
+    @app.route('/retry_proxymesh')
+    def retry_proxymesh():
+        scraper.check_proxy_connection()
+        return jsonify({"proxy_connected": scraper.proxy_connected})
 
 if __name__ == '__main__':
     app.run(debug=True)

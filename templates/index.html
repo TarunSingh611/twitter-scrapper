@@ -7,32 +7,69 @@
 </head>
 <body>
     <div class="container">
-        <button onclick="runScraper()" class="run-button">Click here to run the script</button>
+        <div id="connection-status" class="status-panel">
+            <h3>Connection Status</h3>
+            <div class="status-item">
+                <span>Twitter Connection:</span>
+                <span id="twitter-status" class="status-indicator">Checking...</span>
+                <button onclick="retryTwitter()" class="retry-button">Retry Twitter</button>
+            </div>
+            <div class="status-item">
+                <span>ProxyMesh Connection:</span>
+                <span id="proxy-status" class="status-indicator">Checking...</span>
+                <button onclick="retryProxyMesh()" class="retry-button">Retry ProxyMesh</button>
+            </div>
+            <div id="error-message" class="error-message"></div>
+        </div>
+    
+        <button onclick="runScraper()" id="scraper-button" class="run-button" disabled>
+            Click here to run the script
+        </button>
         <div id="results"></div>
     </div>
-
+    
     <script>
-        function runScraper() {
-            document.getElementById('results').innerHTML = 'Loading...';
-            fetch('/run_scraper')
+        function updateConnectionStatus(status) {
+            document.getElementById('twitter-status').textContent = status.twitter_connected ? 'Connected' : 'Disconnected';
+            document.getElementById('twitter-status').className = 'status-indicator ' + (status.twitter_connected ? 'connected' : 'disconnected');
+            
+            document.getElementById('proxy-status').textContent = status.proxy_connected ? 'Connected' : 'Disconnected';
+            document.getElementById('proxy-status').className = 'status-indicator ' + (status.proxy_connected ? 'connected' : 'disconnected');
+            
+            document.getElementById('error-message').textContent = status.error || '';
+            document.getElementById('scraper-button').disabled = !(status.twitter_connected && status.proxy_connected);
+        }
+    
+        function retryTwitter() {
+            fetch('/retry_twitter')
                 .then(response => response.json())
                 .then(data => {
-                    let html = `
-                        <h3>These are the most happening topics as on ${data.datetime}</h3>
-                        <ul>
-                            ${data.trends.map(trend => `<li>${trend}</li>`).join('')}
-                        </ul>
-                        <p>The IP address used for this query was ${data.ip_address}</p>
-                        <h4>Here's a JSON extract of this record from the MongoDB:</h4>
-                        <pre>${JSON.stringify(data.mongodb_record, null, 2)}</pre>
-                        <button onclick="runScraper()" class="run-button">Click here to run the query again</button>
-                    `;
-                    document.getElementById('results').innerHTML = html;
-                })
-                .catch(error => {
-                    document.getElementById('results').innerHTML = 'Error: ' + error;
+                    document.getElementById('twitter-status').textContent = data.twitter_connected ? 'Connected' : 'Disconnected';
+                    document.getElementById('twitter-status').className = 'status-indicator ' + (data.twitter_connected ? 'connected' : 'disconnected');
+                    checkStatus();
                 });
         }
+    
+        function retryProxyMesh() {
+            fetch('/retry_proxymesh')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('proxy-status').textContent = data.proxy_connected ? 'Connected' : 'Disconnected';
+                    document.getElementById('proxy-status').className = 'status-indicator ' + (data.proxy_connected ? 'connected' : 'disconnected');
+                    checkStatus();
+                });
+        }
+    
+        function checkStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(updateConnectionStatus);
+        }
+    
+        // Initial status check
+        checkStatus();
+        // Check status every 30 seconds
+        setInterval(checkStatus, 30000);
     </script>
 </body>
 </html>

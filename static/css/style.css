@@ -15,17 +15,56 @@ body {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.run-button {
-    background-color: #1da1f2;
-    color: white;
-    border: none;
-    padding: 10px 20px;
+.status-panel {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
     border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
 }
 
-.run-button:hover {
+.status-item {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+    gap: 10px;
+}
+
+.status-indicator {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.connected {
+    background-color: #28a745;
+    color: white;
+}
+
+.disconnected {
+    background-color: #dc3545;
+    color: white;
+}
+
+.retry-button {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.error-message {
+    color: #dc3545;
+    margin-top: 10px;
+}
+
+.run-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.run-button:hover:not(:disabled) {
     background-color: #1991db;
 }
 
@@ -52,4 +91,5 @@ li {
 
 h3, h4 {
     color: #333;
+    margin-top: 0;
 }
