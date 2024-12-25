@@ -14,6 +14,7 @@ import requests
 import time
 import logging
 from typing import Dict, Any, Optional
+import tweepy
 
 # Configure logging
 logging.basicConfig(
@@ -151,54 +152,27 @@ class TwitterScraper:
             return False
 
     def login_twitter(self) -> None:
-        logger.info("Retrying Twitter connection-----------3")
         """Log in to Twitter using credentials from environment variables."""
         logger.info("Attempting Twitter login...")
+        
         try:
-            self.driver.get("https://twitter.com/i/flow/login")
-            wait = WebDriverWait(self.driver, 30)
+            # Retrieve credentials from environment variables
+            username = os.getenv('TWITTER_USERNAME')
+            password = os.getenv('TWITTER_PASSWORD')
 
-            # Enter username
-            username_field = wait.until(EC.presence_of_element_located((
-                By.CSS_SELECTOR, 
-                "input[autocomplete='username'][type='text']"
-            )))
-            username_field.send_keys(os.getenv('TWITTER_USERNAME'))
-            time.sleep(random.uniform(1, 2))
+            # Log in to Twitter
+            self.client.login(auth_info_1=username, password=password)
 
-            # Click next
-            next_button = wait.until(EC.element_to_be_clickable((
-                By.XPATH, 
-                "//div[@role='button'][.//span[text()='Next' or text()='Sign in']]"
-            )))
-            next_button.click()
-            time.sleep(random.uniform(1, 2))
+            # Save cookies to avoid repeated logins
+            self.client.save_cookies('cookies.json')
+            logger.info("Twitter login successful.")
 
-            # Enter password
-            password_field = wait.until(EC.presence_of_element_located((
-                By.CSS_SELECTOR, 
-                "input[type='password']"
-            )))
-            password_field.send_keys(os.getenv('TWITTER_PASSWORD'))
-            time.sleep(random.uniform(1, 2))
-
-            # Click login
-            login_button = wait.until(EC.element_to_be_clickable((
-                By.XPATH, 
-                "//div[@role='button'][.//span[text()='Log in' or text()='Sign in']]"
-            )))
-            login_button.click()
-
-            # Verify login
-            time.sleep(5)
-            self.twitter_connected = self.check_if_logged_in()
-            if not self.twitter_connected:
-                raise Exception("Failed to verify Twitter login")
+            # Set connected status
+            self.twitter_connected = True
 
         except Exception as e:
             self.twitter_connected = False
-            self.connection_error = f"Twitter Login Error: {str(e)}"
-            logger.error(self.connection_error)
+            logger.error(f"Twitter Login Error: {str(e)}")
             raise
 
     def get_trending_topics(self) -> Dict[str, Any]:
