@@ -34,9 +34,12 @@ def check_status():
 
 @app.route('/retry_twitter')
 def retry_twitter():
-    if scraper.driver:
-        scraper.driver.quit()
-        scraper.driver = None
+    # if scraper.driver:
+    #     scraper.driver.quit()
+    #     scraper.driver = None
+    if scraper.twitter_connected:
+        return jsonify({"twitter_connected": True})
+    logger.info("Retrying Twitter connection-----------1")
     scraper.initialize_driver_and_login()
     return jsonify({"twitter_connected": scraper.twitter_connected})
 
@@ -64,6 +67,26 @@ def get_trends():
             "status": "error",
             "message": str(e)
         }), 500
+
+@app.route('/run_scraper')
+def run_scraper():
+    try:
+        # Check connections first
+        status = scraper.get_connection_status()
+        if not status['twitter_connected'] or not status['proxy_connected']:
+            return jsonify({
+                "error": "Not connected to Twitter or ProxyMesh. Please check connections.",
+                "status": "error"
+            })
+
+        # Run the scraper
+        results = scraper.get_trending_topics()
+        return json_util.dumps(results)
+    except Exception as e:
+        return jsonify({
+            "error": f"Error running scraper: {str(e)}",
+            "status": "error"
+        })
 
 @app.teardown_appcontext
 def cleanup(exception=None):

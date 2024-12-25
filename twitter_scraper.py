@@ -72,10 +72,18 @@ class TwitterScraper:
             raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
     def initialize_driver_and_login(self) -> None:
+        logger.info("Retrying Twitter connection-----------2")
         """Initialize all connections on startup."""
         try:
-            if self.check_proxy_connection():
-                self.initialize_driver_and_login()
+            logger.info("Retrying Twitter connection-----------2.2")
+            if self.proxy_connected:
+                logger.info("Retrying Twitter connection-----------2.3")
+                self.login_twitter()
+            else:
+                logger.info("Retrying Twitter connection-----------2.4")
+                self.check_proxy_connection()
+                logger.info("Retrying Twitter connection-----------2.5")
+                self.login_twitter()
         except Exception as e:
             logger.error(f"Initialization failed: {str(e)}")
             raise
@@ -89,7 +97,7 @@ class TwitterScraper:
                 response = requests.get(
                     'https://api.ipify.org',
                     proxies={'http': proxy_url, 'https': proxy_url},
-                    timeout=10,
+                    timeout=300,
                     headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
                 )
                 if response.status_code == 200:
@@ -143,6 +151,7 @@ class TwitterScraper:
             return False
 
     def login_twitter(self) -> None:
+        logger.info("Retrying Twitter connection-----------3")
         """Log in to Twitter using credentials from environment variables."""
         logger.info("Attempting Twitter login...")
         try:
@@ -248,12 +257,21 @@ class TwitterScraper:
                 "status": "error",
                 "message": error_msg
             }
-        def cleanup(self) -> None:
-            """Clean up resources."""
-            if self.driver:
-                self.driver.quit()
-            if self.client:
-                self.client.close()
+
+    def get_connection_status(self):
+        """Get current connection status"""
+        return {
+            "twitter_connected": self.twitter_connected,
+            "proxy_connected": self.proxy_connected,
+            "error": self.connection_error
+        }
+        
+    def cleanup(self) -> None:
+        """Clean up resources."""
+        if self.driver:
+            self.driver.quit()
+        if self.client:
+            self.client.close()
 
 if __name__ == "__main__":
     try:
