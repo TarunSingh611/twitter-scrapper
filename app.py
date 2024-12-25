@@ -1,3 +1,4 @@
+# Flask Application Code
 from flask import Flask, render_template, jsonify
 from twitter_scraper import TwitterScraper
 from bson import json_util
@@ -53,7 +54,7 @@ def retry_twitter():
         })
 
     try:
-        scraper.initialize_driver_and_login()
+        scraper._init_connection()
         return jsonify({
             "twitter_connected": scraper.twitter_connected,
             "error": scraper.connection_error
@@ -65,26 +66,26 @@ def retry_twitter():
             "error": str(e)
         })
 
-@app.route('/retry_proxymesh')
-def retry_proxymesh():
-    if scraper is None:
-        return jsonify({
-            "proxy_connected": False,
-            "error": "Twitter scraper not initialized"
-        })
+# @app.route('/retry_proxymesh')
+# def retry_proxymesh():
+#     if scraper is None:
+#         return jsonify({
+#             "proxy_connected": False,
+#             "error": "Twitter scraper not initialized"
+#         })
 
-    try:
-        scraper.check_proxy_connection()
-        return jsonify({
-            "proxy_connected": scraper.proxy_connected,
-            "error": scraper.connection_error
-        })
-    except Exception as e:
-        logger.error(f"Error retrying proxy connection: {str(e)}")
-        return jsonify({
-            "proxy_connected": False,
-            "error": str(e)
-        })
+#     try:
+#         scraper.get_connection_status()
+#         return jsonify({
+#             "proxy_connected": scraper.proxy_connected,
+#             "error": scraper.connection_error
+#         })
+#     except Exception as e:
+#         logger.error(f"Error retrying proxy connection: {str(e)}")
+#         return jsonify({
+#             "proxy_connected": False,
+#             "error": str(e)
+#         })
 
 @app.route('/trends')
 def get_trends():

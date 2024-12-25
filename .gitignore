@@ -5,7 +5,7 @@ __pycache__/
 .DS_Store
 
 twitter_scraper.log
-
+login_failure*
 __pycache__
 *.pyc
 venv/

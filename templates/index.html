@@ -22,7 +22,7 @@
             <div class="status-item">
                 <span>ProxyMesh Connection:</span>
                 <span id="proxy-status" class="status-indicator">Checking...</span>
-                <button onclick="retryProxyMesh()" id="retry-proxy" class="retry-button">Retry ProxyMesh</button>
+                <!-- <button onclick="retryProxyMesh()" id="retry-proxy" class="retry-button">Retry ProxyMesh</button> -->
                 <span id="proxy-error" class="error-text"></span>
             </div>
             <!-- General Error Messages -->
@@ -110,30 +110,30 @@
         }
 
         // Retry ProxyMesh connection
-        function retryProxyMesh() {
-            const button = document.getElementById('retry-proxy');
-            const errorText = document.getElementById('proxy-error');
+        // function retryProxyMesh() {
+        //     const button = document.getElementById('retry-proxy');
+        //     const errorText = document.getElementById('proxy-error');
             
-            button.disabled = true;
-            button.textContent = 'Retrying...';
-            errorText.textContent = '';
+        //     button.disabled = true;
+        //     button.textContent = 'Retrying...';
+        //     errorText.textContent = '';
 
-            fetch('/retry_proxymesh')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        errorText.textContent = data.error;
-                    }
-                    checkStatus(); // Update all statuses
-                })
-                .catch(error => {
-                    errorText.textContent = 'Connection failed. Please try again.';
-                })
-                .finally(() => {
-                    button.disabled = false;
-                    button.textContent = 'Retry ProxyMesh';
-                });
-        }
+        //     fetch('/retry_proxymesh')
+        //         .then(response => response.json())
+        //         .then(data => {
+        //             if (data.error) {
+        //                 errorText.textContent = data.error;
+        //             }
+        //             checkStatus(); // Update all statuses
+        //         })
+        //         .catch(error => {
+        //             errorText.textContent = 'Connection failed. Please try again.';
+        //         })
+        //         .finally(() => {
+        //             button.disabled = false;
+        //             button.textContent = 'Retry ProxyMesh';
+        //         });
+        // }
 
         // Run the scraper
         function runScraper() {
