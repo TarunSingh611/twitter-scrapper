@@ -14,7 +14,7 @@ import requests
 import time
 import logging
 from typing import Dict, Any, Optional
-import tweepy
+import twikit
 
 # Configure logging
 logging.basicConfig(
@@ -41,10 +41,6 @@ class TwitterScraper:
         # ProxyMesh configuration
         self.proxy_list = [
             "us-ca.proxymesh.com:31280",
-            "us-wa.proxymesh.com:31280",
-            "us-fl.proxymesh.com:31280",
-            "us-ny.proxymesh.com:31280",
-            "us-il.proxymesh.com:31280"
         ]
         self.proxy_auth = f"{os.getenv('PROXYMESH_USERNAME')}:{os.getenv('PROXYMESH_PASSWORD')}"
         
@@ -73,21 +69,33 @@ class TwitterScraper:
             raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
     def initialize_driver_and_login(self) -> None:
-        logger.info("Retrying Twitter connection-----------2")
-        """Initialize all connections on startup."""
+        """
+        Initialize all connections on startup, including setting up the driver and logging into Twitter.
+        """
+        logger.info("Initializing Twitter connection...")
         try:
-            logger.info("Retrying Twitter connection-----------2.2")
-            if self.proxy_connected:
-                logger.info("Retrying Twitter connection-----------2.3")
-                self.login_twitter()
-            else:
-                logger.info("Retrying Twitter connection-----------2.4")
+            # Ensure proxy connection
+            if not self.proxy_connected:
+                logger.info("Checking proxy connection...")
                 self.check_proxy_connection()
-                logger.info("Retrying Twitter connection-----------2.5")
-                self.login_twitter()
+
+            if not self.proxy_connected:
+                raise Exception("Proxy connection failed. Cannot proceed with Twitter login.")
+
+            # Ensure web driver is set up
+            logger.info("Setting up the web driver...")
+            if not self.setup_driver():
+                raise Exception("Web driver setup failed. Cannot proceed with Twitter login.")
+
+            # Attempt to log in
+            logger.info("Logging into Twitter...")
+            self.login_twitter()
+
+            logger.info("Twitter connection initialized successfully.")
         except Exception as e:
             logger.error(f"Initialization failed: {str(e)}")
             raise
+
 
     def check_proxy_connection(self) -> bool:
         """Check and establish proxy connection."""
@@ -159,20 +167,55 @@ class TwitterScraper:
             # Retrieve credentials from environment variables
             username = os.getenv('TWITTER_USERNAME')
             password = os.getenv('TWITTER_PASSWORD')
-
-            # Log in to Twitter
-            self.client.login(auth_info_1=username, password=password)
-
-            # Save cookies to avoid repeated logins
-            self.client.save_cookies('cookies.json')
+            if not username or not password:
+                raise ValueError("Twitter credentials are missing from environment variables.")
+            
+            if not self.driver:
+                raise Exception("Web driver is not initialized.")
+            
+            # Navigate to Twitter login page
+            self.driver.get("https://twitter.com/login")
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.NAME, "session[username_or_email]"))
+            )
+            
+            # Enter username
+            username_field = self.driver.find_element(By.NAME, "session[username_or_email]")
+            username_field.clear()
+            username_field.send_keys(username)
+            
+            # Enter password
+            password_field = self.driver.find_element(By.NAME, "session[password]")
+            password_field.clear()
+            password_field.send_keys(password)
+            
+            # Submit login form
+            password_field.submit()
+            
+            # Wait for redirection to home page
+            WebDriverWait(self.driver, 15).until(
+                EC.presence_of_element_located((By.XPATH, "//a[@href='/explore']"))
+            )
             logger.info("Twitter login successful.")
-
+            
+            # Save cookies (if required for future sessions)
+            self.driver.save_screenshot("post_login.png")  # For debugging
+            cookies = self.driver.get_cookies()
+            with open("cookies.json", "w") as file:
+                import json
+                json.dump(cookies, file)
+            
             # Set connected status
             self.twitter_connected = True
-
-        except Exception as e:
+        
+        except TimeoutException:
+            logger.error("Login process timed out. Check network connection or Twitter's anti-bot measures.")
             self.twitter_connected = False
+            raise
+        
+        except Exception as e:
             logger.error(f"Twitter Login Error: {str(e)}")
+            self.twitter_connected = False
             raise
 
     def get_trending_topics(self) -> Dict[str, Any]:
