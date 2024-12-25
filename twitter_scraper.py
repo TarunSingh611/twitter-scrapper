@@ -29,21 +29,21 @@ logger = logging.getLogger(__name__)
 
 class TwitterScraper:
     def __init__(self):
-        """Initialize the TwitterScraper with configurations and automatic connection."""
+        """Initialize the TwitterScraper with configurations."""
         load_dotenv()
         self._validate_env_variables()
-        
+
         self.twitter_connected = False
         self.proxy_connected = False
-        self.connection_error: Optional[str] = None
+        self.connection_error = None
         self.driver = None
-        
+
         # ProxyMesh configuration
         self.proxy_list = [
             "us-ca.proxymesh.com:31280",
         ]
         self.proxy_auth = f"{os.getenv('PROXYMESH_USERNAME')}:{os.getenv('PROXYMESH_PASSWORD')}"
-        
+
         # MongoDB configuration
         try:
             self.client = MongoClient(os.getenv('MONGODB_URI'), serverSelectionTimeoutMS=5000)
@@ -52,10 +52,14 @@ class TwitterScraper:
             self.collection = self.db['trending_topics']
         except Exception as e:
             logger.error(f"MongoDB connection failed: {str(e)}")
-            raise Exception("Failed to connect to MongoDB")
+            self.connection_error = f"MongoDB connection failed: {str(e)}"
 
-        # Initialize connections automatically
-        self.initialize_driver_and_login()
+        # Try to initialize connections, but don't fail if unsuccessful
+        try:
+            self.initialize_driver_and_login()
+        except Exception as e:
+            logger.error(f"Initial connection failed: {str(e)}")
+            self.connection_error = str(e)
 
     def _validate_env_variables(self) -> None:
         """Validate that all required environment variables are present."""
@@ -80,12 +84,16 @@ class TwitterScraper:
                 self.check_proxy_connection()
 
             if not self.proxy_connected:
-                raise Exception("Proxy connection failed. Cannot proceed with Twitter login.")
+                self.connection_error = "Proxy connection failed. Cannot proceed with Twitter login."
+                logger.error(self.connection_error)
+                return
 
             # Ensure web driver is set up
             logger.info("Setting up the web driver...")
             if not self.setup_driver():
-                raise Exception("Web driver setup failed. Cannot proceed with Twitter login.")
+                self.connection_error = "Web driver setup failed. Cannot proceed with Twitter login."
+                logger.error(self.connection_error)
+                return
 
             # Attempt to log in
             logger.info("Logging into Twitter...")
@@ -93,8 +101,8 @@ class TwitterScraper:
 
             logger.info("Twitter connection initialized successfully.")
         except Exception as e:
-            logger.error(f"Initialization failed: {str(e)}")
-            raise
+            self.connection_error = f"Initialization failed: {str(e)}"
+            logger.error(self.connection_error)
 
 
     def check_proxy_connection(self) -> bool:
@@ -123,101 +131,90 @@ class TwitterScraper:
         return False
 
     def setup_driver(self) -> bool:
-        """Set up Chrome driver with proxy and anti-detection measures."""
-        logger.info("Setting up Chrome driver...")
         try:
-            proxy = random.choice(self.proxy_list)
             chrome_options = Options()
-            
-            # Essential Chrome options
-            chrome_options.add_argument('--headless')  # Run in headless mode
-            chrome_options.add_argument('--no-sandbox')
-            chrome_options.add_argument('--disable-dev-shm-usage')
+
+            # Additional anti-detection measures
             chrome_options.add_argument('--disable-blink-features=AutomationControlled')
-            chrome_options.add_argument('--window-size=1920,1080')
-            chrome_options.add_argument(f'--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36')
-            
-            # Configure proxy
-            proxy_with_auth = f'http://{self.proxy_auth}@{proxy}'
-            chrome_options.add_argument(f'--proxy-server={proxy_with_auth}')
-            
-            # Anti-detection measures
+            chrome_options.add_argument('--disable-infobars')
+            chrome_options.add_argument('--disable-notifications')
+            chrome_options.add_argument('--disable-popup-blocking')
+            chrome_options.add_argument('--start-maximized')
             chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
             chrome_options.add_experimental_option('useAutomationExtension', False)
-            
+
+            # Add random viewport size
+            viewports = [(1366, 768), (1920, 1080), (1536, 864)]
+            viewport = random.choice(viewports)
+            chrome_options.add_argument(f'--window-size={viewport[0]},{viewport[1]}')
+
+            # Random user agent
+            user_agents = [
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/119.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/120.0.0.0 Safari/537.36'
+            ]
+            chrome_options.add_argument(f'--user-agent={random.choice(user_agents)}')
+
+            # Initialize driver
             self.driver = webdriver.Chrome(options=chrome_options)
-            
-            # Additional anti-detection measures
+
+            # Additional CDP commands
             self.driver.execute_cdp_cmd('Network.setUserAgentOverride', {
-                "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'
+                "userAgent": random.choice(user_agents)
             })
             self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-            
+
             return True
         except Exception as e:
-            self.connection_error = f"Driver Setup Error: {str(e)}"
-            logger.error(self.connection_error)
+            logger.error(f"Driver setup failed: {str(e)}")
             return False
 
     def login_twitter(self) -> None:
         """Log in to Twitter using credentials from environment variables."""
-        logger.info("Attempting Twitter login...")
-        
         try:
-            # Retrieve credentials from environment variables
-            username = os.getenv('TWITTER_USERNAME')
-            password = os.getenv('TWITTER_PASSWORD')
-            if not username or not password:
-                raise ValueError("Twitter credentials are missing from environment variables.")
-            
-            if not self.driver:
-                raise Exception("Web driver is not initialized.")
-            
-            # Navigate to Twitter login page
-            self.driver.get("https://twitter.com/login")
-            WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.NAME, "session[username_or_email]"))
-            )
-            
-            # Enter username
-            username_field = self.driver.find_element(By.NAME, "session[username_or_email]")
-            username_field.clear()
-            username_field.send_keys(username)
-            
-            # Enter password
-            password_field = self.driver.find_element(By.NAME, "session[password]")
-            password_field.clear()
-            password_field.send_keys(password)
-            
-            # Submit login form
-            password_field.submit()
-            
-            # Wait for redirection to home page
-            WebDriverWait(self.driver, 15).until(
-                EC.presence_of_element_located((By.XPATH, "//a[@href='/explore']"))
-            )
-            logger.info("Twitter login successful.")
-            
-            # Save cookies (if required for future sessions)
-            self.driver.save_screenshot("post_login.png")  # For debugging
-            cookies = self.driver.get_cookies()
-            with open("cookies.json", "w") as file:
-                import json
-                json.dump(cookies, file)
-            
-            # Set connected status
-            self.twitter_connected = True
-        
-        except TimeoutException:
-            logger.error("Login process timed out. Check network connection or Twitter's anti-bot measures.")
-            self.twitter_connected = False
-            raise
-        
-        except Exception as e:
-            logger.error(f"Twitter Login Error: {str(e)}")
-            self.twitter_connected = False
-            raise
+            # Add random delays between actions
+            def random_delay():
+                time.sleep(random.uniform(3,6))
 
+            self.driver.get("https://twitter.com/i/flow/login")
+            random_delay()
+
+            # Wait for username field and enter username
+            username_field = WebDriverWait(self.driver, 15).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "input[autocomplete='username']"))
+            )
+            for char in os.getenv('TWITTER_USERNAME'):
+                username_field.send_keys(char)
+                time.sleep(random.uniform(0.1, 0.3))
+
+            random_delay()
+            username_field.send_keys(Keys.RETURN)
+
+            # Wait for password field and enter password
+            password_field = WebDriverWait(self.driver, 15).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='password']"))
+            )
+            for char in os.getenv('TWITTER_PASSWORD'):
+                password_field.send_keys(char)
+                time.sleep(random.uniform(0.1, 0.3))
+
+            random_delay()
+            password_field.send_keys(Keys.RETURN)
+
+            # Wait for home page to load
+            WebDriverWait(self.driver, 20).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "[data-testid='primaryColumn']"))
+            )
+
+            self.twitter_connected = True
+            logger.info("Successfully logged into Twitter")
+
+        except Exception as e:
+            self.twitter_connected = False
+            logger.error(f"Twitter login failed: {str(e)}")
+            raise
+            
     def get_trending_topics(self) -> Dict[str, Any]:
         """Fetch and store the top 5 trending topics from Twitter."""
         if not all([self.twitter_connected, self.proxy_connected]):
@@ -276,12 +273,24 @@ class TwitterScraper:
             }
 
     def get_connection_status(self):
-        """Get current connection status"""
-        return {
+        """Enhanced connection status check"""
+        status = {
             "twitter_connected": self.twitter_connected,
             "proxy_connected": self.proxy_connected,
-            "error": self.connection_error
+            "error": self.connection_error,
+            "last_successful_scrape": None,
+            "current_proxy": None,
+            "mongodb_connected": False
         }
+
+        # Add MongoDB connection check
+        try:
+            self.client.admin.command('ping')
+            status["mongodb_connected"] = True
+        except:
+            pass
+
+        return status
         
     def cleanup(self) -> None:
         """Clean up resources."""

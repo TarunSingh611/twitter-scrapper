@@ -8,30 +8,39 @@
     <div class="container">
         <h2>Twitter Trends Scraper</h2>
         
+        <!-- Connection Status Panel -->
         <div id="connection-status" class="status-panel">
             <h3>Connection Status</h3>
+            <!-- Twitter Status -->
             <div class="status-item">
                 <span>Twitter Connection:</span>
                 <span id="twitter-status" class="status-indicator">Checking...</span>
-                <button onclick="retryTwitter()" class="retry-button">Retry Twitter</button>
+                <button onclick="retryTwitter()" id="retry-twitter" class="retry-button">Retry Twitter</button>
+                <span id="twitter-error" class="error-text"></span>
             </div>
+            <!-- ProxyMesh Status -->
             <div class="status-item">
                 <span>ProxyMesh Connection:</span>
                 <span id="proxy-status" class="status-indicator">Checking...</span>
-                <button onclick="retryProxyMesh()" class="retry-button">Retry ProxyMesh</button>
+                <button onclick="retryProxyMesh()" id="retry-proxy" class="retry-button">Retry ProxyMesh</button>
+                <span id="proxy-error" class="error-text"></span>
             </div>
+            <!-- General Error Messages -->
             <div id="error-message" class="error-message"></div>
         </div>
-   
+
+        <!-- Scraper Controls -->
         <div class="scraper-section">
             <button onclick="runScraper()" id="scraper-button" class="run-button" disabled>
                 Scrape Latest Trends
             </button>
             <div id="loading" class="loading-spinner" style="display: none;">
-                Scraping trends...
+                <div class="spinner"></div>
+                <span>Scraping trends...</span>
             </div>
         </div>
 
+        <!-- Results Section -->
         <div id="results" class="results-section" style="display: none;">
             <h3>Latest Twitter Trends</h3>
             <div class="trends-container">
@@ -41,127 +50,162 @@
                     <span id="ip-address"></span>
                 </div>
             </div>
+            <div id="json-view" class="json-view">
+                <h4>MongoDB Record:</h4>
+                <pre id="json-data"></pre>
+            </div>
         </div>
     </div>
-   
+
     <script>
+        // Update connection status and UI elements
         function updateConnectionStatus(status) {
-            document.getElementById('twitter-status').textContent = status.twitter_connected ? 'Connected' : 'Disconnected';
-            document.getElementById('twitter-status').className = 'status-indicator ' + (status.twitter_connected ? 'connected' : 'disconnected');
-           
-            document.getElementById('proxy-status').textContent = status.proxy_connected ? 'Connected' : 'Disconnected';
-            document.getElementById('proxy-status').className = 'status-indicator ' + (status.proxy_connected ? 'connected' : 'disconnected');
-           
-            document.getElementById('error-message').textContent = status.error || '';
+            // Update Twitter status
+            const twitterStatus = document.getElementById('twitter-status');
+            const twitterRetry = document.getElementById('retry-twitter');
+            twitterStatus.textContent = status.twitter_connected ? 'Connected' : 'Disconnected';
+            twitterStatus.className = 'status-indicator ' + (status.twitter_connected ? 'connected' : 'disconnected');
+            twitterRetry.style.display = status.twitter_connected ? 'none' : 'inline-block';
+
+            // Update ProxyMesh status
+            const proxyStatus = document.getElementById('proxy-status');
+            const proxyRetry = document.getElementById('retry-proxy');
+            proxyStatus.textContent = status.proxy_connected ? 'Connected' : 'Disconnected';
+            proxyStatus.className = 'status-indicator ' + (status.proxy_connected ? 'connected' : 'disconnected');
+            proxyRetry.style.display = status.proxy_connected ? 'none' : 'inline-block';
+
+            // Show error message if any
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = status.error || '';
+            errorMessage.style.display = status.error ? 'block' : 'none';
+
+            // Enable/disable scraper button
             document.getElementById('scraper-button').disabled = !(status.twitter_connected && status.proxy_connected);
         }
-   
+
+        // Retry Twitter connection
         function retryTwitter() {
-            const button = document.querySelector('button[onclick="retryTwitter()"]');
+            const button = document.getElementById('retry-twitter');
+            const errorText = document.getElementById('twitter-error');
+            
             button.disabled = true;
             button.textContent = 'Retrying...';
+            errorText.textContent = '';
 
             fetch('/retry_twitter')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.status === 'error') {
-                        document.getElementById('error-message').textContent = data.message;
-                    } else {
-                        document.getElementById('twitter-status').textContent = data.twitter_connected ? 'Connected' : 'Disconnected';
-                        document.getElementById('twitter-status').className = 'status-indicator ' + (data.twitter_connected ? 'connected' : 'disconnected');
+                    if (data.error) {
+                        errorText.textContent = data.error;
                     }
+                    checkStatus(); // Update all statuses
                 })
                 .catch(error => {
-                    document.getElementById('error-message').textContent = 'Failed to retry Twitter connection';
+                    errorText.textContent = 'Connection failed. Please try again.';
                 })
                 .finally(() => {
                     button.disabled = false;
                     button.textContent = 'Retry Twitter';
-                    checkStatus();
                 });
         }
-   
+
+        // Retry ProxyMesh connection
         function retryProxyMesh() {
-            const button = document.querySelector('button[onclick="retryProxyMesh()"]');
+            const button = document.getElementById('retry-proxy');
+            const errorText = document.getElementById('proxy-error');
+            
             button.disabled = true;
             button.textContent = 'Retrying...';
+            errorText.textContent = '';
 
             fetch('/retry_proxymesh')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.status === 'error') {
-                        document.getElementById('error-message').textContent = data.message;
-                    } else {
-                        document.getElementById('proxy-status').textContent = data.proxy_connected ? 'Connected' : 'Disconnected';
-                        document.getElementById('proxy-status').className = 'status-indicator ' + (data.proxy_connected ? 'connected' : 'disconnected');
+                    if (data.error) {
+                        errorText.textContent = data.error;
                     }
+                    checkStatus(); // Update all statuses
                 })
                 .catch(error => {
-                    document.getElementById('error-message').textContent = 'Failed to retry ProxyMesh connection';
+                    errorText.textContent = 'Connection failed. Please try again.';
                 })
                 .finally(() => {
                     button.disabled = false;
                     button.textContent = 'Retry ProxyMesh';
-                    checkStatus();
                 });
         }
 
+        // Run the scraper
         function runScraper() {
             const button = document.getElementById('scraper-button');
             const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const errorMessage = document.getElementById('error-message');
+
             button.disabled = true;
-            loading.style.display = 'block';
-            document.getElementById('error-message').textContent = '';
+            loading.style.display = 'flex';
+            results.style.display = 'none';
+            errorMessage.textContent = '';
 
             fetch('/trends')
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'error') {
-                        document.getElementById('error-message').textContent = data.message;
-                        return;
+                        throw new Error(data.message);
                     }
 
-                    const results = document.getElementById('results');
-                    const trendsList = document.getElementById('trends-list');
-                    const scrapeTime = document.getElementById('scrape-time');
-                    const ipAddress = document.getElementById('ip-address');
-
-                    // Clear previous results
-                    trendsList.innerHTML = '';
-
-                    // Create trending topics list
-                    const trendingTopics = document.createElement('ol');
-                    data.data.trends.forEach(trend => {
-                        const li = document.createElement('li');
-                        li.textContent = trend;
-                        trendingTopics.appendChild(li);
-                    });
-                    trendsList.appendChild(trendingTopics);
-
-                    // Update metadata
-                    scrapeTime.textContent = `Scraped at: ${new Date(data.data.datetime.$date).toLocaleString()}`;
-                    ipAddress.textContent = `IP: ${data.data.ip_address}`;
-
-                    results.style.display = 'block';
+                    displayResults(data.data);
                 })
                 .catch(error => {
-                    document.getElementById('error-message').textContent = 'Failed to fetch trends';
+                    errorMessage.textContent = error.message || 'Failed to fetch trends';
                 })
                 .finally(() => {
                     button.disabled = false;
                     loading.style.display = 'none';
                 });
         }
-   
+
+        // Display scraped results
+        function displayResults(data) {
+            const results = document.getElementById('results');
+            const trendsList = document.getElementById('trends-list');
+            
+            // Clear previous results
+            trendsList.innerHTML = '';
+            
+            // Add trends as list items
+            const trendingTopics = document.createElement('ol');
+            data.trends.forEach(trend => {
+                const li = document.createElement('li');
+                li.textContent = trend;
+                trendingTopics.appendChild(li);
+            });
+            trendsList.appendChild(trendingTopics);
+            
+            // Update metadata
+            document.getElementById('scrape-time').textContent = 
+                `Scraped at: ${new Date(data.datetime.$date).toLocaleString()}`;
+            document.getElementById('ip-address').textContent = 
+                `IP: ${data.ip_address}`;
+            
+            // Show JSON data
+            document.getElementById('json-data').textContent = 
+                JSON.stringify(data, null, 2);
+            
+            results.style.display = 'block';
+        }
+
+        // Check connection status
         function checkStatus() {
             fetch('/status')
                 .then(response => response.json())
                 .then(updateConnectionStatus)
                 .catch(error => {
-                    document.getElementById('error-message').textContent = 'Failed to check connection status';
+                    document.getElementById('error-message').textContent = 
+                        'Failed to check connection status';
                 });
         }
-   
+
         // Initial status check
         checkStatus();
         // Check status every 30 seconds

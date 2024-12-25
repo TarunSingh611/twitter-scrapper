@@ -22,7 +22,13 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 app = Flask(__name__)
-scraper = TwitterScraper()
+
+# Initialize scraper with error handling
+try:
+    scraper = TwitterScraper()
+except Exception as e:
+    logger.error(f"Failed to initialize TwitterScraper: {str(e)}")
+    scraper = None
 
 @app.route('/')
 def home():
@@ -30,33 +36,69 @@ def home():
 
 @app.route('/status')
 def check_status():
+    if scraper is None:
+        return jsonify({
+            "twitter_connected": False,
+            "proxy_connected": False,
+            "error": "Twitter scraper initialization failed"
+        })
     return jsonify(scraper.get_connection_status())
 
 @app.route('/retry_twitter')
 def retry_twitter():
-    # if scraper.driver:
-    #     scraper.driver.quit()
-    #     scraper.driver = None
-    if scraper.twitter_connected:
-        return jsonify({"twitter_connected": True})
-    logger.info("Retrying Twitter connection-----------1")
-    scraper.initialize_driver_and_login()
-    return jsonify({"twitter_connected": scraper.twitter_connected})
+    if scraper is None:
+        return jsonify({
+            "twitter_connected": False,
+            "error": "Twitter scraper not initialized"
+        })
+
+    try:
+        scraper.initialize_driver_and_login()
+        return jsonify({
+            "twitter_connected": scraper.twitter_connected,
+            "error": scraper.connection_error
+        })
+    except Exception as e:
+        logger.error(f"Error retrying Twitter connection: {str(e)}")
+        return jsonify({
+            "twitter_connected": False,
+            "error": str(e)
+        })
 
 @app.route('/retry_proxymesh')
 def retry_proxymesh():
-    scraper.check_proxy_connection()
-    return jsonify({"proxy_connected": scraper.proxy_connected})
+    if scraper is None:
+        return jsonify({
+            "proxy_connected": False,
+            "error": "Twitter scraper not initialized"
+        })
+
+    try:
+        scraper.check_proxy_connection()
+        return jsonify({
+            "proxy_connected": scraper.proxy_connected,
+            "error": scraper.connection_error
+        })
+    except Exception as e:
+        logger.error(f"Error retrying proxy connection: {str(e)}")
+        return jsonify({
+            "proxy_connected": False,
+            "error": str(e)
+        })
 
 @app.route('/trends')
 def get_trends():
-    """Get current trending topics."""
-    logger.info("Fetching trending topics...")
+    if scraper is None:
+        return jsonify({
+            "status": "error",
+            "message": "Twitter scraper not initialized"
+        }), 500
+
     try:
         trends = scraper.get_trending_topics()
         if trends.get("status") == "error":
             return jsonify(trends), 500
-            
+
         return jsonify({
             "status": "success",
             "data": json.loads(json_util.dumps(trends))
@@ -68,29 +110,9 @@ def get_trends():
             "message": str(e)
         }), 500
 
-@app.route('/run_scraper')
-def run_scraper():
-    try:
-        # Check connections first
-        status = scraper.get_connection_status()
-        if not status['twitter_connected'] or not status['proxy_connected']:
-            return jsonify({
-                "error": "Not connected to Twitter or ProxyMesh. Please check connections.",
-                "status": "error"
-            })
-
-        # Run the scraper
-        results = scraper.get_trending_topics()
-        return json_util.dumps(results)
-    except Exception as e:
-        return jsonify({
-            "error": f"Error running scraper: {str(e)}",
-            "status": "error"
-        })
-
 @app.teardown_appcontext
 def cleanup(exception=None):
-    if scraper.driver:
+    if scraper and scraper.driver:
         try:
             scraper.driver.quit()
         except Exception as e:
@@ -99,11 +121,11 @@ def cleanup(exception=None):
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    
+
     try:
         app.run(host='0.0.0.0', port=port, debug=debug)
     except Exception as e:
         logger.error(f"Failed to start Flask app: {str(e)}")
     finally:
-        if scraper.driver:
+        if scraper and scraper.driver:
             scraper.driver.quit()
