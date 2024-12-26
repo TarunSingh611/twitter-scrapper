@@ -18,6 +18,9 @@ import logging
 from typing import Dict, Any, Optional
 from bs4 import BeautifulSoup
 from proxy_fetcher import get_all_proxies
+import concurrent.futures
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Configure logging
 logging.basicConfig(
@@ -357,15 +360,3 @@ class TwitterScraper:
             logger.info("Cleanup completed successfully")
         except Exception as e:
             logger.error(f"Error during cleanup: {str(e)}")
-
-# if __name__ == "__main__":
-#     scraper = None
-#     try:
-#         scraper = TwitterScraper()
-#         results = scraper.get_trending_topics()
-#         print(results)
-#     except Exception as e:
-#         logger.error(f"Script failed: {str(e)}")
-#     finally:
-#         if scraper:
-#             scraper.cleanup()
