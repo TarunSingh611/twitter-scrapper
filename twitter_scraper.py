@@ -17,6 +17,7 @@ import time
 import logging
 from typing import Dict, Any, Optional
 from bs4 import BeautifulSoup
+from proxy_fetcher import ProxyFetcher
 
 # Configure logging
 logging.basicConfig(
@@ -77,60 +78,10 @@ class TwitterScraper:
             logger.error(f"Connection initialization failed: {str(e)}")
             self.connection_error = str(e)
 
-    def get_free_proxies(self) -> list:
-        """Fetch and verify working free proxies."""
-        proxies = []
-        try:
-            sources = [
-                'https://free-proxy-list.net/',
-                'https://www.sslproxies.org/'
-            ]
-            
-            for source in sources:
-                response = requests.get(source, timeout=10)
-                soup = BeautifulSoup(response.text, 'html.parser')
-                proxy_table = soup.find('table')
-                
-                if proxy_table:
-                    for row in proxy_table.find_all('tr')[1:]:
-                        cols = row.find_all('td')
-                        if len(cols) >= 7:
-                            ip = cols[0].text.strip()
-                            port = cols[1].text.strip()
-                            https = cols[6].text.strip()
-                            
-                            if https == 'yes':
-                                proxy = f"{ip}:{port}"
-                                proxies.append(proxy)
-
-            # Test proxies
-            working_proxies = []
-            for proxy in proxies[:15]:  # Test more proxies
-                try:
-                    test_url = 'https://api.ipify.org'
-                    response = requests.get(
-                        test_url,
-                        proxies={'http': f'http://{proxy}', 'https': f'http://{proxy}'},
-                        timeout=5
-                    )
-                    if response.status_code == 200:
-                        working_proxies.append(proxy)
-                        logger.info(f"Found working proxy: {proxy}")
-                        if len(working_proxies) >= 3:  # Stop after finding 3 working proxies
-                            break
-                except:
-                    continue
-
-            return working_proxies
-
-        except Exception as e:
-            logger.error(f"Error fetching proxies: {str(e)}")
-            return []
-
     def setup_driver(self) -> bool:
         """Set up Chrome driver with proxy and anti-detection measures."""
         try:
-            working_proxies = self.get_free_proxies()
+            working_proxies = ProxyFetcher()
             if not working_proxies:
                 logger.error("No working proxies found")
                 return False
