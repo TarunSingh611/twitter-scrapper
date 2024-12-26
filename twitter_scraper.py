@@ -17,7 +17,7 @@ import time
 import logging
 from typing import Dict, Any, Optional
 from bs4 import BeautifulSoup
-from proxy_fetcher import ProxyFetcher
+from proxy_fetcher import get_all_proxies
 
 # Configure logging
 logging.basicConfig(
@@ -81,7 +81,7 @@ class TwitterScraper:
     def setup_driver(self) -> bool:
         """Set up Chrome driver with proxy and anti-detection measures."""
         try:
-            working_proxies = ProxyFetcher()
+            working_proxies = get_all_proxies()
             if not working_proxies:
                 logger.error("No working proxies found")
                 return False

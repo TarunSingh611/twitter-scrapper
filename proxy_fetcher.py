@@ -1,136 +1,64 @@
-import requests
-from bs4 import BeautifulSoup
-import concurrent.futures
-import logging
-import random
-import time
-from fake_useragent import UserAgent
+def get_all_proxies() -> list:
+    """Returns a list of all proxies from the logs."""
+    return [
 
-class ProxyFetcher:
-    def __init__(self):
-        self.logger = logging.getLogger(__name__)
-        self.ua = UserAgent()
+        '203.144.144.146:8080', 
+        '136.243.82.121:1083', 
+        '3.139.242.184:80', 
+        '130.162.180.254:8888', 
+        '177.93.49.202:999',   
+        '65.155.249.100:80',
+        '47.116.126.57:80',
+        '152.166.69.34:80',
+        '47.238.134.126:80',
+        '35.176.148.8:80',
+        '3.71.239.218:80',
+        '103.247.12.18:80',
+        '8.213.134.213:80',
+        '190.7.138.78:80',
+        '27.79.174.57:80',
+        '47.238.130.212:80',
+        '3.212.148.199:80',
+        '3.124.133.93:80',
+        '67.43.227.230:80',
+        '27.79.213.217:80',
+        '8.213.197.208:80',
+        '13.36.87.105:80',
+        '8.213.151.128:80',
+        '47.89.159.212:80',
+        '15.207.35.241:80',
+        '47.76.144.139:80',
+        '195.138.73.54:80',
+        '65.1.40.47:80',
+        '14.167.211.187:80',
+        '43.200.77.128:80',
+        '8.211.49.86:80',
+        '103.148.178.10:80',
+        '35.154.71.72:80',
+        '185.82.99.210:80',
+        '119.95.165.236:80',
+        '13.37.73.214:80',
+        '8.211.194.85:80',
+        '8.220.204.215:80',
+        '3.127.62.252:80',
+        '18.169.83.87:80',
+        '47.91.89.3:80',
+        '65.1.244.232:80',
+        '3.126.147.182:80',
+        '3.127.121.101:80',
+        '113.160.133.32:80',
+        '8.221.138.111:80',
+        '103.106.231.188:80',
+        '27.79.188.14:80',
+        '8.210.17.35:80'
+    ]
 
-    def get_free_proxies(self, min_proxies=5, timeout=5) -> list:
-        """Fetch and verify working free proxies."""
-        all_proxies = self._scrape_multiple_sources()
-        return self._verify_proxies(all_proxies, min_proxies, timeout)
-
-    def _get_random_headers(self):
-        """Generate random headers to avoid detection."""
-        return {
-            'User-Agent': self.ua.random,
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Connection': 'keep-alive',
-        }
-
-    def _scrape_multiple_sources(self) -> set:
-        """Scrape proxies from multiple sources."""
-        proxies = set()
-        sources = [
-            'https://free-proxy-list.net/',
-            'https://www.sslproxies.org/',
-            'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt',
-            'https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/https.txt',
-            'https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt'
-        ]
-
-        for source in sources:
-            try:
-                if 'raw.githubusercontent.com' in source:
-                    response = requests.get(
-                        source,
-                        headers=self._get_random_headers(),
-                        timeout=10
-                    )
-                    for line in response.text.splitlines():
-                        if ':' in line:
-                            proxies.add(line.strip())
-                else:
-                    response = requests.get(
-                        source,
-                        headers=self._get_random_headers(),
-                        timeout=10
-                    )
-                    soup = BeautifulSoup(response.text, 'html.parser')
-                    table = soup.find('table')
-
-                    if table:
-                        for row in table.find_all('tr')[1:]:
-                            cols = row.find_all('td')
-                            if len(cols) >= 7:
-                                ip = cols[0].text.strip()
-                                port = cols[1].text.strip()
-                                https = cols[6].text.strip().lower()
-
-                                if https == 'yes':
-                                    proxies.add(f"{ip}:{port}")
-
-                time.sleep(random.uniform(1, 3))  # Random delay between requests
-
-            except Exception as e:
-                self.logger.error(f"Error scraping {source}: {str(e)}")
-                continue
-
-        return proxies
-
-    def _verify_proxy(self, proxy, timeout):
-        """Verify a single proxy."""
-        test_urls = [
-            'https://api.ipify.org',
-            'https://x.com',  # Test specifically for X.com
-            'https://httpbin.org/ip'
-        ]
-
-        for test_url in test_urls:
-            try:
-                proxy_dict = {
-                    'http': f'http://{proxy}',
-                    'https': f'http://{proxy}'
-                }
-
-                response = requests.get(
-                    test_url,
-                    proxies=proxy_dict,
-                    headers=self._get_random_headers(),
-                    timeout=timeout,
-                    verify=False  # Sometimes needed for HTTPS proxies
-                )
-
-                if response.status_code == 200:
-                    speed = response.elapsed.total_seconds()
-                    return True, speed
-
-            except:
-                continue
-
-        return False, float('inf')
-
-    def _verify_proxies(self, proxies, min_proxies, timeout) -> list:
-        """Verify multiple proxies concurrently."""
-        working_proxies = []
-        verified_proxies = []
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            future_to_proxy = {
-                executor.submit(self._verify_proxy, proxy, timeout): proxy 
-                for proxy in proxies
-            }
-
-            for future in concurrent.futures.as_completed(future_to_proxy):
-                proxy = future_to_proxy[future]
-                try:
-                    is_working, speed = future.result()
-                    if is_working:
-                        verified_proxies.append((proxy, speed))
-                        self.logger.info(f"Found working proxy: {proxy} (Speed: {speed:.2f}s)")
-                except Exception as e:
-                    self.logger.error(f"Error verifying {proxy}: {str(e)}")
-
-        # Sort proxies by speed and return the fastest ones
-        verified_proxies.sort(key=lambda x: x[1])
-        working_proxies = [proxy for proxy, _ in verified_proxies[:min_proxies]]
-
-        return working_proxies
-
+def get_random_proxy():
+    """Returns a random proxy from the list."""
+    import random
+    proxies = get_all_proxies()
+    proxy = random.choice(proxies)
+    return {
+        'http': f'http://{proxy}',
+        'https': f'http://{proxy}'
+    }
